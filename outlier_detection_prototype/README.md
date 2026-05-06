@@ -30,15 +30,15 @@ Results will be saved to `data/results.csv` and `data/baselines.json`.
 ```bash
 uvicorn api.main:app --reload
 ```
-The API will be available at `http://localhost:8000`.
+The API will be available at `http://localhost:8000` (Local) or `http://localhost:9000` (Docker).
 
-**Example API Commands:**
-- Get all sectors: `curl http://localhost:8000/sectors`
-- Get outliers: `curl http://localhost:8000/outliers`
-- Get cluster summary: `curl http://localhost:8000/clusters`
+**Example API Commands (using Docker port 9000):**
+- Get all sectors: `curl http://localhost:9000/sectors`
+- Get outliers: `curl http://localhost:9000/outliers`
+- Get cluster summary: `curl http://localhost:9000/clusters`
 - Submit feedback:
   ```bash
-  curl -X POST http://localhost:8000/feedback -H "Content-Type: application/json" -d '{"sector_id": "SEC_001", "is_true_fault": true, "comment": "Verified anomaly"}'
+  curl -X POST http://localhost:9000/feedback -H "Content-Type: application/json" -d '{"sector_id": "SEC_001", "is_true_fault": true, "comment": "Verified anomaly"}'
   ```
 
 ### 3. Launch the Dashboard

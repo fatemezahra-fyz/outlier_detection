@@ -233,8 +233,64 @@ with tab3:
 
     st.markdown("---")
 
+    # KPI Grid (Bar Charts with IQR)
+    st.subheader("KPI forensic Analysis (Value vs. Peer Group)")
+
+    from plotly.subplots import make_subplots
+    cluster_id_str = str(int(s_row['cluster_id']))
+    kpis = [
+        'dl_throughput_mbps', 'ul_throughput_mbps', 'prb_utilization_pct',
+        'connected_users_mean', 'rach_failure_rate_pct', 'handover_success_rate_pct',
+        'ta_mean', 'dl_payload_gb'
+    ]
+
+    fig_grid = make_subplots(
+        rows=2, cols=4,
+        subplot_titles=[k.replace('_', ' ').upper() for k in kpis],
+        vertical_spacing=0.15
+    )
+
+    for i, kpi in enumerate(kpis):
+        row = (i // 4) + 1
+        col = (i % 4) + 1
+        b = baselines[cluster_id_str][kpi]
+
+        # Sector vs Peer Median Bar
+        fig_grid.add_trace(go.Bar(
+            x=['Cell', 'Peer'],
+            y=[s_row[kpi], b['median']],
+            marker_color=[ACCENT_COLOR, 'lightgrey'],
+            showlegend=False,
+            text=[f"{s_row[kpi]:.1f}", f"{b['median']:.1f}"],
+            textposition='auto',
+        ), row=row, col=col)
+
+        # IQR Band as Error Bar
+        fig_grid.add_trace(go.Scatter(
+            x=['Peer'],
+            y=[b['median']],
+            mode='markers',
+            marker=dict(color='rgba(0,0,0,0)', size=1),
+            error_y=dict(
+                type='data',
+                symmetric=False,
+                array=[b['q3'] - b['median']],
+                arrayminus=[b['median'] - b['q1']],
+                color='rgba(0,0,0,0.5)',
+                thickness=10,
+                width=15
+            ),
+            name='IQR Band',
+            showlegend=False
+        ), row=row, col=col)
+
+    fig_grid.update_layout(height=600, margin=dict(t=50, b=50))
+    st.plotly_chart(fig_grid, use_container_width=True)
+
+    st.markdown("---")
+
     # Radar Chart
-    st.subheader("Relative Performance Radar (Z-Scores)")
+    st.subheader("Relative Performance Signature (Z-Scores)")
     kpis = [
         'dl_throughput_mbps', 'ul_throughput_mbps', 'prb_utilization_pct',
         'connected_users_mean', 'rach_failure_rate_pct', 'handover_success_rate_pct',

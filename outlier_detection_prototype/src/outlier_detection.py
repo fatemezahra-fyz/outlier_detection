@@ -97,13 +97,16 @@ def explain_outliers(df, features_df):
     explanations = []
     feature_names = features_df.columns.tolist()
 
+    print("\n--- SHAP Feature Importance for Top 10 Outliers ---")
     for i, idx in enumerate(top_outliers_idx):
         # shap_values is an array [num_samples, num_features]
         sv = shap_values[i]
         top_3_indices = np.argsort(np.abs(sv))[-3:][::-1]
         top_3_features = [f"{feature_names[j]} ({sv[j]:.2f})" for j in top_3_indices]
+        sector_id = df.loc[idx, 'sector_id']
+        print(f"Sector {sector_id}: {', '.join(top_3_features)}")
         explanations.append({
-            'sector_id': df.loc[idx, 'sector_id'],
+            'sector_id': sector_id,
             'top_features': top_3_features
         })
 
