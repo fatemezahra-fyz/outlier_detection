@@ -19,9 +19,9 @@ COPY . .
 # Ensure the data directory exists
 RUN mkdir -p data
 
-# Expose ports for FastAPI (8000) and Streamlit (8001)
+# Expose ports for FastAPI (8000) and Streamlit (8501)
 EXPOSE 8000
-EXPOSE 8001
+EXPOSE 8501
 
 # By default, run the pipeline to ensure data is available,
 # but this will likely be overridden in docker-compose.yml

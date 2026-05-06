@@ -57,8 +57,8 @@ To run the entire system (Pipeline, API, and Dashboard) using Docker:
    ```
 
 2. **Access the services:**
-   - **FastAPI:** `http://localhost:8000`
-   - **Streamlit Dashboard:** `http://localhost:8001` (accessible from other devices on the network via your IP)
+   - **FastAPI:** `http://localhost:9000`
+   - **Streamlit Dashboard:** `http://localhost:9001` (accessible from other devices on the network via your IP)
 
 3. **Run Pipeline inside container (if needed to refresh data):**
    ```bash
