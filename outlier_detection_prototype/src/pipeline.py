@@ -46,6 +46,7 @@ def run_pipeline():
     print("SHAP explanations generated for top 10 outliers.")
 
     # Save results
+    df.to_csv(os.path.join(data_dir, 'synthetic_sectors.csv'), index=False)
     df_results.to_csv(os.path.join(data_dir, 'results.csv'), index=False)
 
     # Save baselines for API/Dashboard use

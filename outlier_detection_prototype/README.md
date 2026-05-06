@@ -1,6 +1,6 @@
-# RAN Outlier Detection System Prototype
+# MTNIrancell RAN Outlier Detection System Prototype
 
-This prototype implements an Intelligent Network Anomaly Detection system for Radio Access Network (RAN) sectors. It uses peer-grouping and robust statistical baselines to detect performance outliers.
+This prototype implements an Intelligent Network Anomaly Detection system for Radio Access Network (RAN) sectors, specifically tailored for MTNIrancell's network in Ahvaz, Iran. It uses peer-grouping and robust statistical baselines to detect performance outliers.
 
 ## Features
 - **Synthetic Data Generation**: Simulates 500 RAN sectors with CM and PM data.

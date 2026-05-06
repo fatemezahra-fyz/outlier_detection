@@ -5,11 +5,81 @@ import plotly.graph_objects as go
 import json
 import os
 
-st.set_page_config(page_title="RAN Outlier Detection Dashboard", layout="wide")
+# MTNIrancell Branding Colors
+PRIMARY_COLOR = "#FFCC00" # Irancell Yellow/Orange
+SECONDARY_COLOR = "#000000" # Black
+ACCENT_COLOR = "#FF8C00" # Darker Orange
 
-st.title("📡 RAN Outlier Detection System")
+st.set_page_config(
+    page_title="MTNIrancell RAN Anomaly Detection",
+    page_icon="🟡",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Use absolute paths based on this file's location
+# Professional CSS Injection
+st.markdown(f"""
+    <style>
+    /* Main Background */
+    .stApp {{
+        background-color: #ffffff;
+    }}
+
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {{
+        background-color: {SECONDARY_COLOR};
+        color: white;
+    }}
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
+        color: white;
+        font-weight: 500;
+    }}
+
+    /* Headers */
+    .main-header {{
+        color: {ACCENT_COLOR};
+        font-size: 36px;
+        font-weight: 800;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #eee;
+        display: flex;
+        align-items: center;
+    }}
+
+    /* Metric Cards */
+    [data-testid="stMetricValue"] {{
+        color: {ACCENT_COLOR};
+    }}
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 24px;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #f8f9fa;
+        border-radius: 4px 4px 0 0;
+        gap: 1px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }}
+    .stTabs [aria-selected="true"] {{
+        background-color: #fff3e0 !important;
+        border-bottom: 3px solid {ACCENT_COLOR} !important;
+    }}
+
+    /* Alerts */
+    .stAlert {{
+        border-left: 5px solid {ACCENT_COLOR};
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+# Application Header
+st.markdown(f'<div class="main-header">🟡 MTNIrancell RAN Anomaly Detection</div>', unsafe_allow_html=True)
+
+# Absolute Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(BASE_DIR, 'data', 'results.csv')
 BASELINES_PATH = os.path.join(BASE_DIR, 'data', 'baselines.json')
@@ -17,7 +87,6 @@ BASELINES_PATH = os.path.join(BASE_DIR, 'data', 'baselines.json')
 @st.cache_data
 def load_data():
     if not os.path.exists(DATA_PATH):
-        st.error(f"Results not found at {DATA_PATH}. Please run the pipeline first.")
         return None
     return pd.read_csv(DATA_PATH)
 
@@ -31,70 +100,202 @@ def load_baselines():
 df = load_data()
 baselines = load_baselines()
 
-if df is not None:
-    tab1, tab2, tab3, tab4 = st.tabs(["Overview Map", "Outlier Table", "Sector Deep Dive", "Cluster Baselines"])
+if df is None:
+    st.warning("⚠️ No result data found. Please run the ML Pipeline first: `python src/pipeline.py`")
+    st.stop()
 
-    with tab1:
-        st.header("Network Anomaly Map")
-        fig = px.scatter_mapbox(df,
-                                lat="latitude",
-                                lon="longitude",
-                                color="outlier_score",
-                                size="outlier_score",
-                                color_continuous_scale=px.colors.sequential.Reds,
-                                size_max=15,
-                                zoom=11,
-                                hover_name="sector_id",
-                                hover_data=["cluster_id", "outlier_score", "top_contributing_kpi"],
-                                mapbox_style="carto-positron")
-        st.plotly_chart(fig, use_container_width=True)
+# --- SIDEBAR ---
+with st.sidebar:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/MTN_Group_Logo.svg/1024px-MTN_Group_Logo.svg.png", width=80)
+    st.header("Network Summary")
 
-    with tab2:
-        st.header("Outlier Table")
-        # Highlight outliers
-        def highlight_outliers(row):
-            return ['background-color: #ffcccc' if row.is_outlier else '' for _ in row]
+    total_sectors = len(df)
+    outliers_df = df[df['is_outlier']]
+    outlier_count = len(outliers_df)
+    outlier_rate = outlier_count / total_sectors
 
-        display_cols = ['sector_id', 'cluster_id', 'outlier_score', 'is_outlier', 'top_contributing_kpi', 'dl_throughput_mbps', 'rach_failure_rate_pct']
-        st.dataframe(df[display_cols].style.apply(highlight_outliers, axis=1), use_container_width=True)
+    col_s1, col_s2 = st.columns(2)
+    st.metric("Total Sectors", total_sectors)
+    st.metric("Detected Outliers", outlier_count, delta=f"{outlier_rate:.1%}", delta_color="inverse")
 
-    with tab3:
-        st.header("Sector Deep Dive")
-        sector_id = st.selectbox("Select a sector", df['sector_id'].unique())
-        sector_data = df[df['sector_id'] == sector_id].iloc[0]
-        cluster_id = str(int(sector_data['cluster_id']))
+    st.markdown("---")
+    st.subheader("Filter View")
 
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.metric("Outlier Score", f"{sector_data['outlier_score']:.3f}")
-            st.write(f"**Cluster ID:** {cluster_id}")
-            st.write(f"**Is Outlier:** {sector_data['is_outlier']}")
-            st.write(f"**Top Contributor:** {sector_data['top_contributing_kpi']}")
-            if sector_data['flag_silent_rach']:
-                st.warning("⚠️ Silent RACH Failure Detected")
-            if sector_data['neighbor_interference_surge']:
-                st.warning("⚠️ Neighbor Interference Surge Detected")
+    selected_vendors = st.multiselect("Vendor", options=df['vendor'].unique(), default=df['vendor'].unique())
+    selected_layers = st.multiselect("Layer", options=df['layer'].unique(), default=df['layer'].unique())
 
-        with col2:
-            kpis = ['dl_throughput_mbps', 'ul_throughput_mbps', 'prb_utilization_pct', 'connected_users_mean', 'rach_failure_rate_pct', 'handover_success_rate_pct', 'ta_mean', 'dl_payload_gb']
+    st.markdown("---")
+    st.info("💡 **Tip:** Use the 'Sector Deep Dive' tab to investigate specific cells flagged in red.")
 
-            z_scores = [sector_data[f'{kpi}_zscore'] for kpi in kpis]
+# Filter Data
+filtered_df = df[(df['vendor'].isin(selected_vendors)) & (df['layer'].isin(selected_layers))]
 
-            fig_z = px.bar(x=kpis, y=z_scores, title=f"KPI Z-Scores for {sector_id} (Relative to Peer Group)")
-            fig_z.add_hline(y=3, line_dash="dash", line_color="red", annotation_text="Outlier Threshold")
-            fig_z.add_hline(y=-3, line_dash="dash", line_color="red")
-            st.plotly_chart(fig_z, use_container_width=True)
+# --- MAIN CONTENT ---
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🗺️ Ahvaz Network Map",
+    "📋 Outlier Analysis",
+    "🔍 Sector Deep Dive",
+    "📊 Peer Group Insights"
+])
 
-    with tab4:
-        st.header("Cluster Baselines")
-        selected_cluster = st.selectbox("Select a cluster", sorted(df['cluster_id'].unique()))
-        cluster_df = df[df['cluster_id'] == selected_cluster]
+# Tab 1: Map
+with tab1:
+    st.header("Geospatial Anomaly Map - Ahvaz")
 
-        kpi_to_plot = st.selectbox("Select KPI to visualize", kpis)
+    color_map = px.colors.sequential.Oranges
 
-        fig_box = px.box(df, x="cluster_id", y=kpi_to_plot, color="cluster_id", title=f"{kpi_to_plot} distribution across clusters")
-        st.plotly_chart(fig_box, use_container_width=True)
+    fig_map = px.scatter_mapbox(
+        filtered_df,
+        lat="latitude",
+        lon="longitude",
+        color="outlier_score",
+        size="outlier_score",
+        color_continuous_scale=color_map,
+        size_max=12,
+        zoom=11.5,
+        hover_name="sector_id",
+        hover_data={
+            "latitude": False,
+            "longitude": False,
+            "cluster_id": True,
+            "outlier_score": ":.3f",
+            "top_contributing_kpi": True
+        },
+        mapbox_style="carto-positron",
+        title="Interactive Anomaly Heatmap"
+    )
+    fig_map.update_layout(margin={"r":0,"t":40,"l":0,"b":0}, height=600)
+    st.plotly_chart(fig_map, use_container_width=True)
 
-        if baselines and str(int(selected_cluster)) in baselines:
-            st.write("### Baseline Statistics")
-            st.json(baselines[str(int(selected_cluster))])
+# Tab 2: Outlier Table
+with tab2:
+    st.header("Anomalous Sectors Detection")
+
+    # Sort by outlier score
+    table_df = filtered_df.sort_values("outlier_score", ascending=False)
+
+    # KPIs to show in table
+    display_cols = [
+        'sector_id', 'vendor', 'layer', 'cluster_id',
+        'outlier_score', 'is_outlier', 'top_contributing_kpi'
+    ]
+
+    def color_outliers(val):
+        color = '#ffebee' if val == True else 'white'
+        return f'background-color: {color}'
+
+    st.dataframe(
+        table_df[display_cols].style.map(color_outliers, subset=['is_outlier']),
+        use_container_width=True,
+        height=400
+    )
+
+    st.markdown("---")
+    col_t1, col_t2 = st.columns(2)
+
+    with col_t1:
+        st.subheader("Outlier Distribution by Vendor")
+        v_counts = outliers_df['vendor'].value_counts().reset_index()
+        fig_pie = px.pie(v_counts, values='count', names='vendor',
+                         color_discrete_sequence=[ACCENT_COLOR, "#FFD580", "#333333"])
+        st.plotly_chart(fig_pie)
+
+    with col_t2:
+        st.subheader("Top Root Causes (KPIs)")
+        k_counts = outliers_df['top_contributing_kpi'].value_counts().reset_index()
+        fig_bar = px.bar(k_counts, x='top_contributing_kpi', y='count',
+                         color_discrete_sequence=[ACCENT_COLOR])
+        fig_bar.update_layout(xaxis_title="KPI", yaxis_title="Number of Outliers")
+        st.plotly_chart(fig_bar)
+
+# Tab 3: Deep Dive
+with tab3:
+    st.header("Sector Forensic Analysis")
+
+    target_sector = st.selectbox("Select Sector for Detail Investigation", df['sector_id'].unique())
+    s_row = df[df['sector_id'] == target_sector].iloc[0]
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Outlier Score", f"{s_row['outlier_score']:.3f}")
+    c2.metric("Cluster ID", int(s_row['cluster_id']))
+    c3.metric("Top KPI Impact", s_row['top_contributing_kpi'].replace('_', ' ').title())
+
+    status_icon = "❌ CRITICAL" if s_row['is_outlier'] else "✅ HEALTHY"
+    c4.metric("Status", status_icon)
+
+    if s_row['flag_silent_rach'] or s_row['neighbor_interference_surge']:
+        st.error("### 🚨 Forensic Alerts Detected")
+        cols_a = st.columns(2)
+        if s_row['flag_silent_rach']:
+            cols_a[0].warning("**Silent RACH Failure**: High failure rate vs peer group.")
+        if s_row['neighbor_interference_surge']:
+            cols_a[1].warning("**Neighbor Interference**: Local handover performance issues.")
+
+    st.markdown("---")
+
+    # Radar Chart
+    st.subheader("Relative Performance Radar (Z-Scores)")
+    kpis = [
+        'dl_throughput_mbps', 'ul_throughput_mbps', 'prb_utilization_pct',
+        'connected_users_mean', 'rach_failure_rate_pct', 'handover_success_rate_pct',
+        'ta_mean', 'dl_payload_gb'
+    ]
+    z_vals = [s_row[f'{kpi}_zscore'] for kpi in kpis]
+
+    fig_radar = go.Figure()
+    fig_radar.add_trace(go.Scatterpolar(
+        r=z_vals,
+        theta=[k.replace('_', ' ').upper() for k in kpis],
+        fill='toself',
+        name=f'Sector {target_sector}',
+        line_color=ACCENT_COLOR,
+        fillcolor='rgba(255, 140, 0, 0.3)'
+    ))
+
+    # Add peer group average (which is 0 in z-score space)
+    fig_radar.add_trace(go.Scatterpolar(
+        r=[0]*len(kpis),
+        theta=[k.replace('_', ' ').upper() for k in kpis],
+        fill=None,
+        name='Peer Group Median',
+        line_color='grey',
+        line_dash='dash'
+    ))
+
+    fig_radar.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[-4, 4], tickfont_size=10)
+        ),
+        showlegend=True,
+        height=500
+    )
+    st.plotly_chart(fig_radar, use_container_width=True)
+
+# Tab 4: Baselines
+with tab4:
+    st.header("Peer Group Benchmarking")
+
+    sel_cluster = st.selectbox("Select Peer Group (Cluster)", sorted(df['cluster_id'].unique()))
+
+    kpi_choice = st.selectbox("Benchmark KPI", kpis, format_func=lambda x: x.replace('_', ' ').title())
+
+    fig_box = px.box(
+        df,
+        x="cluster_id",
+        y=kpi_choice,
+        color="cluster_id",
+        title=f"{kpi_choice.replace('_', ' ').title()} Distribution by Peer Group",
+        color_discrete_sequence=px.colors.sequential.Oranges_r
+    )
+
+    # Add a point for the selected sector if it belongs to this cluster view
+    st.plotly_chart(fig_box, use_container_width=True)
+
+    if baselines:
+        st.subheader(f"Group {sel_cluster} Statistics")
+        cluster_key = str(int(sel_cluster))
+        if cluster_key in baselines:
+            stats_df = pd.DataFrame(baselines[cluster_key]).T
+            st.table(stats_df)
+        else:
+            st.info("No baseline data available for this cluster ID.")

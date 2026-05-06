@@ -23,8 +23,8 @@ def generate_synthetic_data(num_sectors=500, seed=42):
         'antenna_tilt_electrical': np.random.uniform(0, 15, num_sectors),
         'transmit_power_dbm': np.random.uniform(30, 46, num_sectors),
         'azimuth': np.random.uniform(0, 360, num_sectors),
-        'latitude': np.random.uniform(51.4, 51.6, num_sectors),
-        'longitude': np.random.uniform(-0.2, 0.0, num_sectors)
+        'latitude': np.random.uniform(31.2, 31.4, num_sectors), # Ahvaz area
+        'longitude': np.random.uniform(48.6, 48.8, num_sectors)
     }
 
     df = pd.DataFrame(data)
