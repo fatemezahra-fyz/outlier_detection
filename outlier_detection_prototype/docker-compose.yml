@@ -1,5 +1,6 @@
 services:
   api:
+    build: .
     image: outlier_detection:v1
     ports:
       - "9000:8000"
@@ -9,6 +10,7 @@ services:
     restart: always
 
   dashboard:
+    build: .
     image: outlier_detection:v1
     ports:
       - "9001:8501"

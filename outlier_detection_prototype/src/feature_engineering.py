@@ -4,11 +4,15 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from geopy.distance import geodesic
 from scipy.spatial.distance import cdist
+from logger import setup_logger
+
+logger = setup_logger("feature_engineering")
 
 def engineer_features(df):
     """
     Step 2: Feature Engineering Pipeline
     """
+    logger.info("Starting feature engineering...")
     df = df.copy()
 
     # 1. Derived features
@@ -47,12 +51,14 @@ def engineer_features(df):
     df['distance_to_nearest_site'] = np.min(distances, axis=1)
     df['local_site_density'] = np.sum(distances <= 2.0, axis=1)
 
+    logger.info("Feature engineering complete.")
     return df
 
 def preprocess_features(df):
     """
     Apply preprocessing: Z-score, One-hot, Imputation
     """
+    logger.info("Starting feature preprocessing...")
     df = df.copy()
 
     numeric_features = [
@@ -83,6 +89,7 @@ def preprocess_features(df):
     # Combine
     features_final = pd.concat([df_scaled, df_encoded], axis=1)
 
+    logger.info(f"Preprocessing complete. Final feature set shape: {features_final.shape}")
     return features_final, scaler, encoder, imputer
 
 if __name__ == "__main__":

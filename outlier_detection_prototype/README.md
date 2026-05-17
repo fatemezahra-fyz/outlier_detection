@@ -17,7 +17,7 @@ This prototype implements an Intelligent Network Anomaly Detection system for Ra
    pip install -r requirements.txt
    ```
 
-## Usage
+## Usage (Local - Without Docker)
 
 ### 1. Run the ML Pipeline
 This script generates synthetic data, performs clustering, computes baselines, and flags outliers.
@@ -28,42 +28,51 @@ Results will be saved to `data/results.csv` and `data/baselines.json`.
 
 ### 2. Start the API
 ```bash
+# From the project root:
 uvicorn api.main:app --reload
 ```
-The API will be available at `http://localhost:8000` (Local) or `http://localhost:9000` (Docker).
+The API will be available at `http://localhost:8000`.
 
-**Example API Commands (using Docker port 9000):**
-- Get all sectors: `curl http://localhost:9000/sectors`
-- Get outliers: `curl http://localhost:9000/outliers`
-- Get cluster summary: `curl http://localhost:9000/clusters`
+**Example API Commands:**
+- Get all sectors: `curl http://localhost:8000/sectors`
+- Get outliers: `curl http://localhost:8000/outliers`
+- Get cluster summary: `curl http://localhost:8000/clusters`
 - Submit feedback:
   ```bash
-  curl -X POST http://localhost:9000/feedback -H "Content-Type: application/json" -d '{"sector_id": "SEC_001", "is_true_fault": true, "comment": "Verified anomaly"}'
+  curl -X POST http://localhost:8000/feedback -H "Content-Type: application/json" -d '{"sector_id": "SEC_001", "is_true_fault": true, "comment": "Verified anomaly"}'
   ```
 
 ### 3. Launch the Dashboard
 ```bash
+# From the project root:
 streamlit run dashboard/dashboard.py
 ```
-The dashboard provides a spatial map, outlier tables, and deep-dive visualizations.
+The dashboard will be available at `http://localhost:8501`.
 
-## Docker Deployment
+---
+
+## Usage (With Docker)
 
 To run the entire system (Pipeline, API, and Dashboard) using Docker:
 
 1. **Build and Start Services:**
    ```bash
+   # Builds the image tagged outlier_detection:v1 and starts containers
    docker-compose up --build
    ```
 
 2. **Access the services:**
-   - **FastAPI:** `http://localhost:9000`
-   - **Streamlit Dashboard:** `http://localhost:9001` (accessible from other devices on the network via your IP)
+   - **FastAPI:** `http://localhost:9000` (mapped from container port 8000)
+   - **Streamlit Dashboard:** `http://localhost:9001` (mapped from container port 8501)
 
-3. **Run Pipeline inside container (if needed to refresh data):**
+3. **Refresh Data (Run Pipeline inside container):**
    ```bash
    docker-compose exec api python src/pipeline.py
    ```
+
+4. **Example API Commands (Docker):**
+- Get all sectors: `curl http://localhost:9000/sectors`
+- Get outliers: `curl http://localhost:9000/outliers`
 
 ## Project Structure
 - `src/`: Core logic (data generation, feature engineering, clustering, etc.)

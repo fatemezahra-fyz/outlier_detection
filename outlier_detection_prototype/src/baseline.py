@@ -1,4 +1,7 @@
 import pandas as pd
+from logger import setup_logger
+
+logger = setup_logger("baseline")
 
 def compute_peer_group_baselines(df, kpis):
     """
@@ -6,9 +9,13 @@ def compute_peer_group_baselines(df, kpis):
     For each peer group, compute per-KPI baseline statistics:
     - Median, Q1, Q3, IQR
     """
+    logger.info("Computing peer group baselines...")
     baselines = {}
 
-    for cluster_id in df['cluster_id'].unique():
+    unique_clusters = df['cluster_id'].unique()
+    logger.info(f"Found {len(unique_clusters)} unique clusters.")
+
+    for cluster_id in unique_clusters:
         cluster_df = df[df['cluster_id'] == cluster_id]
         cluster_baselines = {}
 
@@ -28,6 +35,7 @@ def compute_peer_group_baselines(df, kpis):
 
         baselines[int(cluster_id)] = cluster_baselines
 
+    logger.info("Baseline computation complete.")
     return baselines
 
 if __name__ == "__main__":

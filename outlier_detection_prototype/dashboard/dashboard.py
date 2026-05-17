@@ -4,6 +4,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 import os
+import sys
+
+# Add src to path to import logger
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
+from logger import setup_logger
+
+logger = setup_logger("dashboard")
 
 # MTNIrancell Branding Colors
 PRIMARY_COLOR = "#FFCC00" # Irancell Yellow/Orange
@@ -86,16 +93,24 @@ BASELINES_PATH = os.path.join(BASE_DIR, 'data', 'baselines.json')
 
 @st.cache_data
 def load_data():
+    logger.info(f"Loading results data from {DATA_PATH}")
     if not os.path.exists(DATA_PATH):
+        logger.error(f"Results file not found at {DATA_PATH}")
         return None
-    return pd.read_csv(DATA_PATH)
+    df = pd.read_csv(DATA_PATH)
+    logger.info(f"Loaded {len(df)} rows of results data")
+    return df
 
 @st.cache_data
 def load_baselines():
+    logger.info(f"Loading baselines from {BASELINES_PATH}")
     if not os.path.exists(BASELINES_PATH):
+        logger.error(f"Baselines file not found at {BASELINES_PATH}")
         return None
     with open(BASELINES_PATH, 'r') as f:
-        return json.load(f)
+        data = json.load(f)
+    logger.info(f"Loaded baselines for {len(data)} clusters")
+    return data
 
 df = load_data()
 baselines = load_baselines()
@@ -218,10 +233,15 @@ with tab3:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Outlier Score", f"{s_row['outlier_score']:.3f}")
     c2.metric("Cluster ID", int(s_row['cluster_id']))
-    c3.metric("Top KPI Impact", s_row['top_contributing_kpi'].replace('_', ' ').title())
+
+    impact_kpi = s_row['top_contributing_kpi'].replace('_', ' ').title()
+    c3.metric("Top KPI Impact", impact_kpi)
 
     status_icon = "❌ CRITICAL" if s_row['is_outlier'] else "✅ HEALTHY"
     c4.metric("Status", status_icon)
+
+    if s_row['is_outlier'] and 'top_features' in s_row and pd.notna(s_row['top_features']):
+        st.info(f"**SHAP Root Cause Analysis:** {s_row['top_features']}")
 
     if s_row['flag_silent_rach'] or s_row['neighbor_interference_surge']:
         st.error("### 🚨 Forensic Alerts Detected")

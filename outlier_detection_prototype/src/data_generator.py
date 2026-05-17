@@ -1,8 +1,12 @@
 import pandas as pd
 import numpy as np
 import os
+from logger import setup_logger
+
+logger = setup_logger("data_generator")
 
 def generate_synthetic_data(num_sectors=500, seed=42):
+    logger.info(f"Generating synthetic data for {num_sectors} sectors...")
     np.random.seed(seed)
 
     # Configuration (CM) features
@@ -45,6 +49,7 @@ def generate_synthetic_data(num_sectors=500, seed=42):
     num_anomalies = int(num_sectors * 0.05)
     anomaly_indices = np.random.choice(df.index, num_anomalies, replace=False)
 
+    logger.info(f"Injecting anomalies into {num_anomalies} sectors...")
     for idx in anomaly_indices:
         anomaly_type = np.random.choice(['low_throughput', 'high_failure', 'high_interference'])
         if anomaly_type == 'low_throughput':
@@ -57,6 +62,7 @@ def generate_synthetic_data(num_sectors=500, seed=42):
             df.loc[idx, 'prb_utilization_pct'] = np.random.uniform(90, 100)
             df.loc[idx, 'dl_throughput_mbps'] *= 0.3
 
+    logger.info("Data generation complete.")
     return df
 
 if __name__ == "__main__":

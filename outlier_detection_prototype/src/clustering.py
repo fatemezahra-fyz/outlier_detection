@@ -4,11 +4,15 @@ from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 import hdbscan
 from sklearn.metrics import silhouette_score, davies_bouldin_score
+from logger import setup_logger
+
+logger = setup_logger("clustering")
 
 def run_clustering_comparison(features_df):
     """
     Step 3: Peer Group Clustering (Similarity Modeling)
     """
+    logger.info("Starting clustering comparison...")
     results = []
 
     # 1. K-Means
@@ -56,7 +60,9 @@ def run_clustering_comparison(features_df):
 def select_best_clustering(results_df):
     # Higher silhouette and lower DB index is better.
     # Let's use a simple heuristic: highest silhouette.
+    logger.info("Selecting best clustering model based on silhouette score...")
     best_row = results_df.loc[results_df['silhouette'].idxmax()]
+    logger.info(f"Best model selected: {best_row['model']} with silhouette {best_row['silhouette']:.4f}")
     return best_row
 
 if __name__ == "__main__":

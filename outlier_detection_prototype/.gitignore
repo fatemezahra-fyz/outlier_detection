@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+data/synthetic_sectors.csv
+data/results.csv
+data/baselines.json
+.streamlit/

@@ -1,9 +1,17 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 import pandas as pd
 import json
 import os
+import sys
 from typing import List, Optional
+import time
+
+# Add src to path to import logger
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
+from logger import setup_logger
+
+logger = setup_logger("api")
 
 app = FastAPI(title="RAN Outlier Detection API")
 
@@ -75,8 +83,17 @@ def get_clusters():
 
     return summary.to_dict(orient='records')
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    logger.info(f"Method: {request.method} Path: {request.url.path} Status: {response.status_code} Duration: {duration:.4f}s")
+    return response
+
 @app.post("/feedback")
 def post_feedback(fb: Feedback):
+    logger.info(f"Feedback received for sector {fb.sector_id}: {fb.is_true_fault}")
     feedback_store.append(fb.dict())
     return {"message": "Feedback received", "count": len(feedback_store)}
 

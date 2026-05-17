@@ -6,27 +6,30 @@ from feature_engineering import engineer_features, preprocess_features
 from clustering import run_clustering_comparison, select_best_clustering
 from baseline import compute_peer_group_baselines
 from outlier_detection import compute_outlier_scores, explain_outliers
+from logger import setup_logger
+
+logger = setup_logger("pipeline")
 
 def run_pipeline():
-    print("Starting pipeline...")
+    logger.info("Starting end-to-end pipeline...")
     script_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(script_dir, '..', 'data')
     os.makedirs(data_dir, exist_ok=True)
 
     # 1. Data Generation
     df = generate_synthetic_data()
-    print("Data generated.")
+    logger.info("Data Generation step complete.")
 
     # 2. Feature Engineering
     df_eng = engineer_features(df)
     features, scaler, encoder, imputer = preprocess_features(df_eng)
-    print("Features engineered and preprocessed.")
+    logger.info("Feature Engineering and Preprocessing step complete.")
 
     # 3. Clustering
     clustering_results = run_clustering_comparison(features)
     best_clustering = select_best_clustering(clustering_results)
     df['cluster_id'] = best_clustering['labels']
-    print(f"Clustering complete. Best model: {best_clustering['model']}")
+    logger.info(f"Clustering step complete. Best model: {best_clustering['model']}")
 
     # 4. Baselines
     kpis = [
@@ -35,17 +38,20 @@ def run_pipeline():
         'ta_mean', 'dl_payload_gb'
     ]
     baselines = compute_peer_group_baselines(df, kpis)
-    print("Baselines computed.")
+    logger.info("Baselines Computation step complete.")
 
     # 5. Outlier Detection
     df_results = compute_outlier_scores(df, kpis, baselines)
-    print("Outlier scores computed.")
+    logger.info("Outlier Detection step complete.")
 
     # 6. SHAP Explainability
     explanations = explain_outliers(df_results, features)
-    print("SHAP explanations generated for top 10 outliers.")
+    exp_df = pd.DataFrame(explanations)
+    df_results = df_results.merge(exp_df, on='sector_id', how='left')
+    logger.info("SHAP Explainability step complete.")
 
     # Save results
+    logger.info(f"Saving results to {data_dir}...")
     df.to_csv(os.path.join(data_dir, 'synthetic_sectors.csv'), index=False)
     df_results.to_csv(os.path.join(data_dir, 'results.csv'), index=False)
 
@@ -53,7 +59,7 @@ def run_pipeline():
     with open(os.path.join(data_dir, 'baselines.json'), 'w') as f:
         json.dump(baselines, f)
 
-    print(f"Pipeline complete. Results saved to {data_dir}")
+    logger.info(f"Pipeline complete. All artifacts saved successfully.")
 
 if __name__ == "__main__":
     run_pipeline()

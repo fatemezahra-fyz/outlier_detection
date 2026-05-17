@@ -3,11 +3,15 @@ import numpy as np
 from sklearn.ensemble import IsolationForest
 import shap
 from geopy.distance import geodesic
+from logger import setup_logger
+
+logger = setup_logger("outlier_detection")
 
 def compute_outlier_scores(df, kpis, baselines):
     """
     Step 5: Outlier Detection
     """
+    logger.info("Starting outlier score computation...")
     df = df.copy()
 
     # Per-KPI z-score relative to peer group
@@ -63,6 +67,7 @@ def compute_outlier_scores(df, kpis, baselines):
     # Since we don't have "directed" handover failures in synthetic data,
     # we'll use a proxy: neighbors have low handover success rate.
 
+    logger.info("Flagging neighbor interference surges...")
     df['neighbor_interference_surge'] = False
     coords = df[['latitude', 'longitude']].values
     for i in range(len(df)):
@@ -79,18 +84,22 @@ def compute_outlier_scores(df, kpis, baselines):
             if neighbor_homsr.mean() < 95:
                 df.at[i, 'neighbor_interference_surge'] = True
 
+    logger.info("Outlier score computation complete.")
     return df
 
 def explain_outliers(df, features_df):
     """
     Step 6: SHAP Explainability
     """
+    logger.info("Generating SHAP explanations for top 10 outliers...")
     top_outliers_idx = df.sort_values('outlier_score', ascending=False).head(10).index
 
     # Train IsolationForest on all features for explainability
+    logger.info("Training IsolationForest for SHAP explainer...")
     model = IsolationForest(random_state=42)
     model.fit(features_df)
 
+    logger.info("Computing SHAP values...")
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(features_df.loc[top_outliers_idx])
 
@@ -107,7 +116,7 @@ def explain_outliers(df, features_df):
         print(f"Sector {sector_id}: {', '.join(top_3_features)}")
         explanations.append({
             'sector_id': sector_id,
-            'top_features': top_3_features
+            'top_features': "; ".join(top_3_features)
         })
 
     return explanations
